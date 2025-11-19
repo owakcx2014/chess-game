@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الشطرنج</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        .current-player {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        #chessboard {
+            display: grid;
+            grid-template-columns: repeat(8, 70px);
+            grid-template-rows: repeat(8, 70px);
+            gap: 0;
+            border: 3px solid #333;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .square {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 45px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .square.light {
+            background-color: #f0d9b5;
+        }
+
+        .square.dark {
+            background-color: #b58863;
+        }
+
+        .square:hover {
+            opacity: 0.8;
+        }
+
+        .square.selected {
+            background-color: #7fc97f !important;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        .square.valid-move {
+            background-color: #ffd700 !important;
+        }
+
+        .square.in-check {
+            background-color: #ff6b6b !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.1em;
+            color: #e74c3c;
+            font-weight: bold;
+            min-height: 25px;
+        }
+
+        .message.check {
+            color: #e74c3c;
+            font-size: 1.3em;
+        }
+
+        .message.checkmate {
+            color: #c0392b;
+            font-size: 1.5em;
+        }
+
+        .promotion-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .promotion-modal.active {
+            display: flex;
+        }
+
+        .promotion-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .promotion-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .promotion-pieces {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .promotion-piece {
+            font-size: 60px;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .promotion-piece:hover {
+            background: #667eea;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 600px) {
+            #chessboard {
+                grid-template-columns: repeat(8, 45px);
+                grid-template-rows: repeat(8, 45px);
+            }
+            .square {
+                width: 45px;
+                height: 45px;
+                font-size: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>♔ لعبة الشطرنج ♚
+بواسطة c00lkiddX17</h1>
+        <div class="info">
+            الدور: <span class="current-player" id="currentPlayer">الأبيض</span>
+        </div>
+        <div id="chessboard"></div>
+        <div class="controls">
+            <button onclick="resetGame()">لعبة جديدة</button>
+        </div>
+        <div class="message" id="message"></div>
+    </div>
+
+    <div class="promotion-modal" id="promotionModal">
+        <div class="promotion-content">
+            <h2>اختر قطعة للترقية</h2>
+            <div class="promotion-pieces" id="promotionPieces"></div>
+        </div>
+    </div>
+
+    <script>
+        const pieces = {
+            white: {
+                king: '♔',
+                queen: '♕',
+                rook: '♖',
+                bishop: '♗',
+                knight: '♘',
+                pawn: '♙'
+            },
+            black: {
+                king: '♚',
+                queen: '♛',
+                rook: '♜',
+                bishop: '♝',
+                knight: '♞',
+                pawn: '♟'
+            }
+        };
+
+        let board = [];
+        let selectedSquare = null;
+        let currentPlayer = 'white';
+        let moveHistory = [];
+        let whiteKingMoved = false;
+        let blackKingMoved = false;
+        let whiteRookKingsideMoved = false;
+        let whiteRookQueensideMoved = false;
+        let blackRookKingsideMoved = false;
+        let blackRookQueensideMoved = false;
+        let gameOver = false;
+
+        function initBoard() {
+            board = [
+                ['♜','♞','♝','♛','♚','♝','♞','♜'],
+                ['♟','♟','♟','♟','♟','♟','♟','♟'],
+                ['','','','','','','',''],
+                ['','','','','','','',''],
+                ['','','','','','','',''],
+                ['','','','','','','',''],
+                ['♙','♙','♙','♙','♙','♙','♙','♙'],
+                ['♖','♘','♗','♕','♔','♗','♘','♖']
+            ];
+            moveHistory = [];
+            whiteKingMoved = false;
+            blackKingMoved = false;
+            whiteRookKingsideMoved = false;
+            whiteRookQueensideMoved = false;
+            blackRookKingsideMoved = false;
+            blackRookQueensideMoved = false;
+            gameOver = false;
+        }
+
+        function renderBoard() {
+            const chessboard = document.getElementById('chessboard');
+            chessboard.innerHTML = '';
+
+            const kingInCheck = isKingInCheck(currentPlayer);
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = 'square ' + ((row + col) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    square.textContent = board[row][col];
+                    
+                    const piece = board[row][col];
+                    if (kingInCheck && ((piece === '♔' && currentPlayer === 'white') || 
+                                        (piece === '♚' && currentPlayer === 'black'))) {
+                        square.classList.add('in-check');
+                    }
+                    
+                    square.onclick = () => handleSquareClick(row, col);
+                    chessboard.appendChild(square);
+                }
+            }
+        }
+
+        function getPieceColor(piece) {
+            if (!piece) return null;
+            const whitePieces = Object.values(pieces.white);
+            return whitePieces.includes(piece) ? 'white' : 'black';
+        }
+
+        function handleSquareClick(row, col) {
+            if (gameOver) return;
+
+            const clickedPiece = board[row][col];
+            const clickedColor = getPieceColor(clickedPiece);
+
+            if (selectedSquare) {
+                const [selectedRow, selectedCol] = selectedSquare;
+                const selectedPiece = board[selectedRow][selectedCol];
+
+                if (row === selectedRow && col === selectedCol) {
+                    selectedSquare = null;
+                    renderBoard();
+                    return;
+                }
+
+                if (clickedColor === currentPlayer) {
+                    selectedSquare = [row, col];
+                    renderBoard();
+                    highlightSquare(row, col);
+                } else if (isValidMove(selectedRow, selectedCol, row, col)) {
+                    makeMove(selectedRow, selectedCol, row, col);
+                } else {
+                    document.getElementById('message').textContent = 'حركة غير صحيحة!';
+                    setTimeout(() => {
+                        if (!gameOver) document.getElementById('message').textContent = '';
+                    }, 2000);
+                }
+            } else {
+                if (clickedColor === currentPlayer) {
+                    selectedSquare = [row, col];
+                    renderBoard();
+                    highlightSquare(row, col);
+                } else if (clickedPiece) {
+                    document.getElementById('message').textContent = 'اختر قطعة من لونك!';
+                    setTimeout(() => {
+                        if (!gameOver) document.getElementById('message').textContent = '';
+                    }, 2000);
+                }
+            }
+        }
+
+        function makeMove(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            
+            // حفظ الحركة للتاريخ
+            moveHistory.push({
+                piece: piece,
+                from: [fromRow, fromCol],
+                to: [toRow, toCol],
+                captured: board[toRow][toCol]
+            });
+
+            // التبييت (Castling)
+            if ((piece === '♔' || piece === '♚') && Math.abs(toCol - fromCol) === 2) {
+                board[toRow][toCol] = piece;
+                board[fromRow][fromCol] = '';
+                
+                if (toCol === 6) { // kingside
+                    board[toRow][5] = board[toRow][7];
+                    board[toRow][7] = '';
+                } else { // queenside
+                    board[toRow][3] = board[toRow][0];
+                    board[toRow][0] = '';
+                }
+                
+                if (currentPlayer === 'white') whiteKingMoved = true;
+                else blackKingMoved = true;
+            }
+            // En Passant
+            else if ((piece === '♙' || piece === '♟') && toCol !== fromCol && !board[toRow][toCol]) {
+                board[toRow][toCol] = piece;
+                board[fromRow][fromCol] = '';
+                board[fromRow][toCol] = ''; // أسر البيدق
+            }
+            // حركة عادية
+            else {
+                board[toRow][toCol] = piece;
+                board[fromRow][fromCol] = '';
+            }
+
+            // تحديث حالة القطع التي تحركت
+            if (piece === '♔') whiteKingMoved = true;
+            if (piece === '♚') blackKingMoved = true;
+            if (piece === '♖' && fromRow === 7 && fromCol === 7) whiteRookKingsideMoved = true;
+            if (piece === '♖' && fromRow === 7 && fromCol === 0) whiteRookQueensideMoved = true;
+            if (piece === '♜' && fromRow === 0 && fromCol === 7) blackRookKingsideMoved = true;
+            if (piece === '♜' && fromRow === 0 && fromCol === 0) blackRookQueensideMoved = true;
+
+            selectedSquare = null;
+
+            // ترقية البيدق (Promotion)
+            if ((piece === '♙' && toRow === 0) || (piece === '♟' && toRow === 7)) {
+                showPromotionModal(toRow, toCol);
+                return;
+            }
+
+            finishTurn();
+        }
+
+        function showPromotionModal(row, col) {
+            const modal = document.getElementById('promotionModal');
+            const piecesDiv = document.getElementById('promotionPieces');
+            piecesDiv.innerHTML = '';
+
+            const promotionPieces = currentPlayer === 'white' 
+                ? [pieces.white.queen, pieces.white.rook, pieces.white.bishop, pieces.white.knight]
+                : [pieces.black.queen, pieces.black.rook, pieces.black.bishop, pieces.black.knight];
+
+            promotionPieces.forEach(piece => {
+                const div = document.createElement('div');
+                div.className = 'promotion-piece';
+                div.textContent = piece;
+                div.onclick = () => {
+                    board[row][col] = piece;
+                    modal.classList.remove('active');
+                    finishTurn();
+                };
+                piecesDiv.appendChild(div);
+            });
+
+            modal.classList.add('active');
+        }
+
+        function finishTurn() {
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+            
+            const inCheck = isKingInCheck(currentPlayer);
+            const hasValidMoves = playerHasValidMoves(currentPlayer);
+
+            if (inCheck && !hasValidMoves) {
+                const winner = currentPlayer === 'white' ? 'الأسود' : 'الأبيض';
+                document.getElementById('message').textContent = `كش ملك! ${winner} فاز! 👑`;
+                document.getElementById('message').className = 'message checkmate';
+                gameOver = true;
+            } else if (!hasValidMoves) {
+                document.getElementById('message').textContent = 'تعادل! لا توجد حركات صحيحة';
+                document.getElementById('message').className = 'message';
+                gameOver = true;
+            } else if (inCheck) {
+                document.getElementById('message').textContent = 'كش ملك! ⚠️';
+                document.getElementById('message').className = 'message check';
+            } else {
+                document.getElementById('message').textContent = '';
+                document.getElementById('message').className = 'message';
+            }
+
+            document.getElementById('currentPlayer').textContent = 
+                currentPlayer === 'white' ? 'الأبيض' : 'الأسود';
+            
+            renderBoard();
+        }
+
+        function highlightSquare(row, col) {
+            const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            if (square) {
+                square.classList.add('selected');
+            }
+        }
+
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            const targetPiece = board[toRow][toCol];
+            const targetColor = getPieceColor(targetPiece);
+
+            if (targetColor === currentPlayer) return false;
+
+            if (!isPieceMoveValid(fromRow, fromCol, toRow, toCol)) return false;
+
+            // التحقق من أن الحركة لا تترك الملك في وضع كش
+            const tempBoard = JSON.parse(JSON.stringify(board));
+            board[toRow][toCol] = piece;
+            board[fromRow][fromCol] = '';
+            
+            const wouldBeInCheck = isKingInCheck(currentPlayer);
+            
+            board = tempBoard;
+            
+            return !wouldBeInCheck;
+        }
+
+        function isPieceMoveValid(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            const targetPiece = board[toRow][toCol];
+            const rowDiff = Math.abs(toRow - fromRow);
+            const colDiff = Math.abs(toCol - fromCol);
+
+            // بيدق
+            if (piece === '♙') {
+                if (fromCol === toCol && !targetPiece) {
+                    if (fromRow === 6 && toRow === 4 && !board[5][fromCol]) return true;
+                    if (toRow === fromRow - 1) return true;
+                }
+                if (colDiff === 1 && toRow === fromRow - 1 && targetPiece) return true;
+                // En Passant
+                if (colDiff === 1 && toRow === fromRow - 1 && fromRow === 3 && !targetPiece) {
+                    const lastMove = moveHistory[moveHistory.length - 1];
+                    if (lastMove && lastMove.piece === '♟' && 
+                        lastMove.from[0] === 1 && lastMove.to[0] === 3 && lastMove.to[1] === toCol) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            if (piece === '♟') {
+                if (fromCol === toCol && !targetPiece) {
+                    if (fromRow === 1 && toRow === 3 && !board[2][fromCol]) return true;
+                    if (toRow === fromRow + 1) return true;
+                }
+                if (colDiff === 1 && toRow === fromRow + 1 && targetPiece) return true;
+                // En Passant
+                if (colDiff === 1 && toRow === fromRow + 1 && fromRow === 4 && !targetPiece) {
+                    const lastMove = moveHistory[moveHistory.length - 1];
+                    if (lastMove && lastMove.piece === '♙' && 
+                        lastMove.from[0] === 6 && lastMove.to[0] === 4 && lastMove.to[1] === toCol) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // قلعة
+            if (piece === '♖' || piece === '♜') {
+                if (fromRow !== toRow && fromCol !== toCol) return false;
+                return isPathClear(fromRow, fromCol, toRow, toCol);
+            }
+
+            // حصان
+            if (piece === '♘' || piece === '♞') {
+                return (rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2);
+            }
+
+            // فيل
+            if (piece === '♗' || piece === '♝') {
+                if (rowDiff !== colDiff) return false;
+                return isPathClear(fromRow, fromCol, toRow, toCol);
+            }
+
+            // ملكة
+            if (piece === '♕' || piece === '♛') {
+                if (fromRow !== toRow && fromCol !== toCol && rowDiff !== colDiff) return false;
+                return isPathClear(fromRow, fromCol, toRow, toCol);
+            }
+
+            // ملك
+            if (piece === '♔' || piece === '♚') {
+                // التبييت (Castling)
+                if (rowDiff === 0 && colDiff === 2) {
+                    if (isKingInCheck(currentPlayer)) return false;
+                    
+                    if (piece === '♔' && !whiteKingMoved) {
+                        // Kingside
+                        if (toCol === 6 && !whiteRookKingsideMoved && 
+                            !board[7][5] && !board[7][6] && board[7][7] === '♖') {
+                            return !isSquareUnderAttack(7, 5, 'white') && !isSquareUnderAttack(7, 6, 'white');
+                        }
+                        // Queenside
+                        if (toCol === 2 && !whiteRookQueensideMoved && 
+                            !board[7][1] && !board[7][2] && !board[7][3] && board[7][0] === '♖') {
+                            return !isSquareUnderAttack(7, 3, 'white') && !isSquareUnderAttack(7, 2, 'white');
+                        }
+                    }
+                    if (piece === '♚' && !blackKingMoved) {
+                        // Kingside
+                        if (toCol === 6 && !blackRookKingsideMoved && 
+                            !board[0][5] && !board[0][6] && board[0][7] === '♜') {
+                            return !isSquareUnderAttack(0, 5, 'black') && !isSquareUnderAttack(0, 6, 'black');
+                        }
+                        // Queenside
+                        if (toCol === 2 && !blackRookQueensideMoved && 
+                            !board[0][1] && !board[0][2] && !board[0][3] && board[0][0] === '♜') {
+                            return !isSquareUnderAttack(0, 3, 'black') && !isSquareUnderAttack(0, 2, 'black');
+                        }
+                    }
+                    return false;
+                }
+                return rowDiff <= 1 && colDiff <= 1;
+            }
+
+            return false;
+        }
+
+        function isPathClear(fromRow, fromCol, toRow, toCol) {
+            const rowStep = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
+            const colStep = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
+
+            let currentRow = fromRow + rowStep;
+            let currentCol = fromCol + colStep;
+
+            while (currentRow !== toRow || currentCol !== toCol) {
+                if (board[currentRow][currentCol]) return false;
+                currentRow += rowStep;
+                currentCol += colStep;
+            }
+
+            return true;
+        }
+
+        function findKing(color) {
+            const kingPiece = color === 'white' ? '♔' : '♚';
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (board[row][col] === kingPiece) {
+                        return [row, col];
+                    }
+                }
+            }
+            return null;
+        }
+
+        function isSquareUnderAttack(row, col, defenderColor) {
+            const attackerColor = defenderColor === 'white' ? 'black' : 'white';
+            
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const piece = board[r][c];
+                    if (getPieceColor(piece) === attackerColor) {
+                        if (isPieceMoveValid(r, c, row, col)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function isKingInCheck(color) {
+            const kingPos = findKing(color);
+            if (!kingPos) return false;
+            return isSquareUnderAttack(kingPos[0], kingPos[1], color);
+        }
+
+        function playerHasValidMoves(color) {
+            for (let fromRow = 0; fromRow < 8; fromRow++) {
+                for (let fromCol = 0; fromCol < 8; fromCol++) {
+                    const piece = board[fromRow][fromCol];
+                    if (getPieceColor(piece) === color) {
+                        for (let toRow = 0; toRow < 8; toRow++) {
+                            for (let toCol = 0; toCol < 8; toCol++) {
+                                if (isValidMove(fromRow, fromCol, toRow, toCol)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function resetGame() {
+            initBoard();
+            selectedSquare = null;
+            currentPlayer = 'white';
+            document.getElementById('currentPlayer').textContent = 'الأبيض';
+            document.getElementById('message').textContent = '';
+            document.getElementById('message').className = 'message';
+            document.getElementById('promotionModal').classList.remove('active');
+            renderBoard();
+        }
+
+        initBoard();
+        renderBoard();
+    </script>
+</body>
+</html>
