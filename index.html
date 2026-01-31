@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Game - لعبة الشطرنج</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    
+    /* المتغيرات العامة */
+    :root {
+      --bg-color: linear-gradient(135deg,#1a1a2e,#16213e,#0f0f23);
+      --board-bg: linear-gradient(145deg,#8B4513,#654321,#3d2817);
+      --panel-bg: rgba(255,255,255,0.1);
+      --text-color: #fff;
+      --light-square: #f0d9b5;
+      --dark-square: #b58863;
+      --selected-square: #7cb342;
+      --button-bg: linear-gradient(145deg,#8B4513,#654321);
+      --button-hover: linear-gradient(145deg,#a0522d,#8B4513);
+    }
+
+    /* ثيم داكن (افتراضي) */
+    .theme-dark {
+      --bg-color: linear-gradient(135deg,#1a1a2e,#16213e,#0f0f23);
+      --board-bg: linear-gradient(145deg,#8B4513,#654321,#3d2817);
+      --panel-bg: rgba(255,255,255,0.1);
+      --text-color: #fff;
+      --light-square: #f0d9b5;
+      --dark-square: #b58863;
+      --selected-square: #7cb342;
+      --button-bg: linear-gradient(145deg,#8B4513,#654321);
+      --button-hover: linear-gradient(145deg,#a0522d,#8B4513);
+    }
+
+    /* ثيم فاتح */
+    .theme-light {
+      --bg-color: linear-gradient(135deg,#e6e6e6,#d9d9d9,#cccccc);
+      --board-bg: linear-gradient(145deg,#d2b48c,#c19a6b,#b8860b);
+      --panel-bg: rgba(0,0,0,0.05);
+      --text-color: #333;
+      --light-square: #f0d9b5;
+      --dark-square: #b58863;
+      --selected-square: #4caf50;
+      --button-bg: linear-gradient(145deg,#a0522d,#8b4513);
+      --button-hover: linear-gradient(145deg,#d2691e,#a0522d);
+    }
+
+    /* ثيم زجاجي ملون */
+    .theme-glass {
+      --bg-color: linear-gradient(135deg, rgba(103,58,183,0.85), rgba(63,81,181,0.85), rgba(33,150,243,0.85));
+      --board-bg: linear-gradient(145deg, rgba(255,87,34,0.8), rgba(255,152,0,0.8), rgba(255,193,7,0.8));
+      --panel-bg: rgba(255,255,255,0.2);
+      --text-color: #fff;
+      --light-square: rgba(255,255,255,0.9);
+      --dark-square: rgba(0,0,0,0.7);
+      --selected-square: rgba(76,175,80,0.8);
+      --button-bg: linear-gradient(145deg, rgba(156,39,176,0.8), rgba(103,58,183,0.8));
+      --button-hover: linear-gradient(145deg, rgba(186,104,200,0.9), rgba(156,39,176,0.9));
+    }
+
+    body{
+      font-family:'Segoe UI',Tahoma,sans-serif;
+      background: var(--bg-color);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      color: var(--text-color);
+      transition: all 0.3s ease;
+    }
+    
+    h1{
+      font-size:2rem;
+      margin-bottom:20px;
+      text-shadow:2px 2px 4px rgba(0,0,0,0.5);
+      text-align:center;
+    }
+    
+    .header-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 800px;
+      margin-bottom: 20px;
+      gap: 15px;
+    }
+    
+    .language-selector {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .lang-btn {
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9rem;
+      min-width: 60px;
+      text-align: center;
+    }
+    
+    .lang-btn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+    }
+    
+    .lang-btn.active {
+      background: rgba(255,255,255,0.3);
+      border-color: white;
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+    
+    .theme-controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .container{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+    
+    .board-wrapper{
+      background: var(--board-bg);
+      padding:15px;
+      border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.5);
+      transition: all 0.3s ease;
+    }
+    
+    /* تأثير زجاجي إضافي للثيم الزجاجي */
+    .theme-glass .board-wrapper {
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.1);
+    }
+    
+    .board{display:grid;grid-template-columns:repeat(8,1fr);gap:0;border-radius:4px;overflow:hidden}
+    
+    .square{
+      width:60px;
+      height:60px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:2.5rem;
+      cursor:pointer;
+      transition:all .15s;
+      position:relative;
+    }
+    
+    .square.light{background: var(--light-square)}
+    .square.dark{background: var(--dark-square)}
+    .square.selected{background: var(--selected-square)!important}
+    
+    .square.valid-move::after{
+      content:'';
+      position:absolute;
+      width:20px;
+      height:20px;
+      background:rgba(0,0,0,0.2);
+      border-radius:50%
+    }
+    
+    .square.capture-move::after{
+      content:'';
+      position:absolute;
+      width:100%;
+      height:100%;
+      border:4px solid rgba(0,0,0,0.3);
+      border-radius:50%;
+      box-sizing:border-box
+    }
+    
+    .square.last-move{background:rgba(255,255,0,0.4)!important}
+    .square.check{background:#ef5350!important;animation:pulse 1s infinite}
+    
+    @keyframes pulse{
+      0%,100%{box-shadow:inset 0 0 20px rgba(255,0,0,0.5)}
+      50%{box-shadow:inset 0 0 30px rgba(255,0,0,0.8)}
+    }
+    
+    .piece{
+      transition:transform .15s;
+      user-select:none;
+      width:100%;
+      height:100%;
+      background-size:contain;
+      background-repeat:no-repeat;
+      background-position:center;
+    }
+    
+    .piece:hover{transform:scale(1.1)}
+    .piece.white{filter:drop-shadow(1px 1px 1px rgba(0,0,0,0.5))}
+    .piece.black{filter:drop-shadow(1px 1px 1px rgba(255,255,255,0.3))}
+    .piece.flipped{transform:rotate(180deg)}
+    
+    /* إضافة فئات الصور للقطع */
+    .p-wk { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/wk.png?raw=true'); }
+    .p-wq { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/wq.png?raw=true'); }
+    .p-wr { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/wr.png?raw=true'); }
+    .p-wb { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/wb.png?raw=true'); }
+    .p-wn { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/wn.png?raw=true'); }
+    .p-wp { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/wp.png?raw=true'); }
+    .p-bk { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/bk.png?raw=true'); }
+    .p-bq { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/bq.png?raw=true'); }
+    .p-br { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/br.png?raw=true'); }
+    .p-bb { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/bb.png?raw=true'); }
+    .p-bn { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/bn.png?raw=true'); }
+    .p-bp { background-image: url('https://github.com/owakcx2014/chess-png/blob/main/bp.png?raw=true'); }
+    
+    .panel{
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding:20px;
+      border-radius:12px;
+      min-width:250px;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    /* تأثير زجاجي إضافي للثيم الزجاجي */
+    .theme-glass .panel {
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 0 15px rgba(255,255,255,0.1);
+    }
+    
+    .status{text-align:center;margin-bottom:15px}
+    .status h2{font-size:1.5rem;margin-bottom:10px}
+    .status.check h2{color:#ef5350;animation:blink 1s infinite}
+    
+    @keyframes blink{50%{opacity:0.5}}
+    
+    .turn-indicator{display:flex;justify-content:center;gap:15px;margin:15px 0}
+    .turn-dot{width:20px;height:20px;border-radius:50%;transition:all .3s}
+    .turn-dot.white{background:#fff;border:2px solid #ccc}
+    .turn-dot.black{background:#333;border:2px solid #666}
+    .turn-dot.active{transform:scale(1.3);box-shadow:0 0 10px rgba(255,255,255,0.5)}
+    
+    .captured{
+      background:rgba(0,0,0,0.2);
+      padding:10px;
+      border-radius:8px;
+      margin-bottom:10px;
+      transition: all 0.3s ease;
+    }
+    
+    .theme-light .captured {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .theme-glass .captured {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    
+    .captured-label{font-size:.8rem;opacity:.7;margin-bottom:5px}
+    .captured-pieces{display:flex;flex-wrap:wrap;gap:2px;min-height:30px;font-size:1.5rem}
+    
+    .timer{margin-bottom:15px}
+    
+    .timer-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px;
+      background:rgba(0,0,0,0.2);
+      border-radius:8px;
+      margin-bottom:5px;
+      transition: all 0.3s ease;
+    }
+    
+    .theme-light .timer-row {
+      background: rgba(0,0,0,0.1);
+    }
+    
+    .theme-glass .timer-row {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    
+    .timer-row.active{
+      background:rgba(255,255,255,0.2);
+      box-shadow:0 0 10px rgba(255,255,255,0.2)
+    }
+    
+    .timer-time{font-family:monospace;font-size:1.5rem;font-weight:bold}
+    .timer-time.low{color:#ef5350}
+    
+    .timer-settings{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-bottom:10px
+    }
+    
+    .timer-settings input{
+      width:60px;
+      padding:5px;
+      border-radius:4px;
+      border:none;
+      text-align:center;
+      background: rgba(255,255,255,0.9);
+      color: #333;
+    }
+    
+    .theme-light .timer-settings input {
+      background: rgba(255,255,255,0.95);
+    }
+    
+    .history{
+      max-height:200px;
+      overflow-y:auto;
+      background:rgba(0,0,0,0.2);
+      border-radius:8px;
+      padding:10px;
+      transition: all 0.3s ease;
+    }
+    
+    .theme-light .history {
+      background: rgba(0,0,0,0.1);
+    }
+    
+    .theme-glass .history {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    
+    .history-table{width:100%;font-size:.9rem}
+    .history-table th{padding:5px;border-bottom:1px solid rgba(255,255,255,0.2)}
+    .theme-light .history-table th {border-bottom:1px solid rgba(0,0,0,0.2)}
+    .history-table td{padding:5px;text-align:center;font-family:monospace}
+    .history-table tr:nth-child(even){background:rgba(255,255,255,0.05)}
+    .theme-light .history-table tr:nth-child(even){background:rgba(0,0,0,0.05)}
+    
+    button{
+      background: var(--button-bg);
+      color:white;
+      border:none;
+      padding:10px 20px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:1rem;
+      transition:all .2s;
+      width:100%;
+      margin-top:10px;
+    }
+    
+    button:hover{
+      background: var(--button-hover);
+      transform:translateY(-2px)
+    }
+    
+    button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    
+    .btn-row{display:flex;gap:10px}
+    .btn-row button{flex:1}
+    
+    .promotion-overlay{
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      bottom:0;
+      background:rgba(0,0,0,0.8);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:1000
+    }
+    
+    .promotion-dialog{
+      background:linear-gradient(145deg,#2a2a4a,#1a1a2e);
+      padding:30px;
+      border-radius:16px;
+      text-align:center
+    }
+    
+    .theme-glass .promotion-dialog {
+      background: linear-gradient(145deg, rgba(103,58,183,0.9), rgba(63,81,181,0.9));
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .promotion-pieces{display:flex;gap:15px;justify-content:center}
+    .promotion-piece{
+      width:70px;
+      height:70px;
+      font-size:3rem;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,0.1);
+      border-radius:12px;
+      cursor:pointer;
+      transition:all .2s
+    }
+    
+    .promotion-piece:hover{
+      background:rgba(255,255,255,0.2);
+      transform:scale(1.1)
+    }
+    
+    /* أزرار التبديل بين الثيمات */
+    .theme-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    
+    .theme-btn:hover {
+      transform: scale(1.1);
+      border-color: rgba(255,255,255,0.7);
+    }
+    
+    .theme-btn.active {
+      transform: scale(1.15);
+      border-color: #fff;
+      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+    
+    .theme-btn.dark {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+    }
+    
+    .theme-btn.light {
+      background: linear-gradient(135deg, #e6e6e6, #d9d9d9);
+      color: #333;
+    }
+    
+    .theme-btn.glass {
+      background: linear-gradient(135deg, rgba(103,58,183,0.8), rgba(63,81,181,0.8));
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    
+    @media(max-width:768px){
+      .container{flex-direction:column}
+      .square{width:40px;height:40px;font-size:1.8rem}
+      .panel{min-width:auto;width:100%}
+      .header-controls {
+        flex-direction: column;
+        gap: 15px;
+      }
+      .language-selector {
+        order: 2;
+      }
+      .theme-controls {
+        order: 1;
+      }
+      .lang-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        min-width: 50px;
+      }
+    }
+    
+    @media(max-width:480px){
+      .language-selector {
+        gap: 5px;
+      }
+      .lang-btn {
+        padding: 5px 8px;
+        font-size: 0.7rem;
+        min-width: 45px;
+      }
+    }
+  </style>
+</head>
+<body class="theme-dark">
+  <div class="header-controls">
+    <div class="language-selector" id="languageSelector">
+      <!-- سيتم ملؤها بالجافاسكريبت -->
+    </div>
+    <div class="theme-controls">
+      <div class="theme-btn dark active" onclick="changeTheme('dark')" title="Dark Theme">🌙</div>
+      <div class="theme-btn light" onclick="changeTheme('light')" title="Light Theme">☀️</div>
+      <div class="theme-btn glass" onclick="changeTheme('glass')" title="Glass Theme">🔮</div>
+    </div>
+  </div>
+  
+  <h1 id="gameTitle">♔ لعبة الشطرنج ♚</h1>
+  
+  <div class="container">
+    <div>
+      <div style="text-align:center;margin-bottom:15px">
+        <button id="modeBtn" onclick="toggleMode()">
+          <span id="modeIcon">📱</span> 
+          <span id="modeText"></span>
+        </button>
+      </div>
+      <div class="board-wrapper">
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="status" id="status">
+        <h2 id="statusText"></h2>
+        <div class="turn-indicator">
+          <div class="turn-dot white active" id="whiteDot"></div>
+          <div class="turn-dot black" id="blackDot"></div>
+        </div>
+      </div>
+      <div class="timer">
+        <div class="timer-settings">
+          <input type="number" id="timerInput" value="10" min="1" max="60">
+          <span id="minutesLabel"></span>
+          <button onclick="resetTimer()" style="width:auto;margin:0;padding:5px 10px" id="setTimerBtn"></button>
+        </div>
+        <div class="btn-row" style="margin-bottom:10px">
+          <button onclick="toggleTimer()" id="timerToggle"></button>
+        </div>
+        <div class="timer-row" id="whiteTimer">
+          <span id="whiteLabel"></span>
+          <span class="timer-time" id="whiteTime">10:00</span>
+        </div>
+        <div class="timer-row" id="blackTimer">
+          <span id="blackLabel"></span>
+          <span class="timer-time" id="blackTime">10:00</span>
+        </div>
+      </div>
+      <div class="captured">
+        <div class="captured-label" id="capturedWhiteLabel"></div>
+        <div class="captured-pieces" id="capturedWhite"></div>
+      </div>
+      <div class="captured">
+        <div class="captured-label" id="capturedBlackLabel"></div>
+        <div class="captured-pieces" id="capturedBlack"></div>
+      </div>
+      <div style="margin-bottom:10px">
+        <h3 style="margin-bottom:10px" id="moveHistoryLabel"></h3>
+        <div class="history">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th id="whiteColumn"></th>
+                <th id="blackColumn"></th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="undoMove()" id="undoBtn"></button>
+        <button onclick="resetGame()" id="resetBtn"></button>
+      </div>
+    </div>
+  </div>
+  <div class="promotion-overlay" id="promotionOverlay">
+    <div class="promotion-dialog">
+      <h3 id="promotionTitle"></h3>
+      <div class="promotion-pieces" id="promotionPieces"></div>
+    </div>
+  </div>
+  <script>
+// ==================== متغيرات اللعبة ====================
+const P={'king-white':'♔','queen-white':'♕','rook-white':'♖','bishop-white':'♗','knight-white':'♘','pawn-white':'♙','king-black':'♚','queen-black':'♛','rook-black':'♜','bishop-black':'♝','knight-black':'♞','pawn-black':'♟'};
+let b=[],cp='white',ss=null,vm=[],lm=null,ep=null,cap={white:[],black:[]},mh=[],gh=[],ck=false,cm=false,st=false,dm=false,wt=600,bt=600,tr=false,ti=null,ac=null,currentTheme='dark',currentLanguage='ar';
+
+// ==================== نظام اللغات ====================
+const translations = {
+  ar: { // العربية
+    gameTitle: "♔ لعبة الشطرنج ♚",
+    darkTheme: "داكن",
+    lightTheme: "فاتح",
+    glassTheme: "زجاجي",
+    phoneMode: "وضع الهاتف",
+    computerMode: "وضع الكمبيوتر",
+    whiteTurn: "دور الأبيض",
+    blackTurn: "دور الأسود",
+    check: "كش!",
+    checkmate: (winner) => `كش ملك! فاز ${winner}`,
+    stalemate: "تعادل!",
+    minutes: "دقيقة",
+    setTimer: "ضبط",
+    startTimer: "▶ تشغيل",
+    pauseTimer: "⏸ إيقاف",
+    white: "⚪ الأبيض",
+    black: "⚫ الأسود",
+    capturedWhite: "القطع المأخوذة من الأبيض:",
+    capturedBlack: "القطع المأخوذة من الأسود:",
+    moveHistory: "سجل الحركات",
+    whiteColumn: "أبيض",
+    blackColumn: "أسود",
+    undo: "↩ تراجع",
+    newGame: "🔄 جديدة",
+    promotionTitle: "اختر قطعة للترقية",
+    timeUpWhite: "انتهى الوقت! فاز الأسود",
+    timeUpBlack: "انتهى الوقت! فاز الأبيض",
+    languages: {
+      ar: "العربية",
+      en: "الإنجليزية",
+      ja: "اليابانية",
+      zh: "الصينية",
+      es: "الإسبانية",
+      fr: "الفرنسية",
+      ru: "الروسية"
+    }
+  },
+  en: { // الإنجليزية
+    gameTitle: "♔ Chess Game ♚",
+    darkTheme: "Dark",
+    lightTheme: "Light",
+    glassTheme: "Glass",
+    phoneMode: "Phone Mode",
+    computerMode: "Computer Mode",
+    whiteTurn: "White's Turn",
+    blackTurn: "Black's Turn",
+    check: "Check!",
+    checkmate: (winner) => `Checkmate! ${winner} wins`,
+    stalemate: "Stalemate!",
+    minutes: "minutes",
+    setTimer: "Set",
+    startTimer: "▶ Start",
+    pauseTimer: "⏸ Pause",
+    white: "⚪ White",
+    black: "⚫ Black",
+    capturedWhite: "White Captured:",
+    capturedBlack: "Black Captured:",
+    moveHistory: "Move History",
+    whiteColumn: "White",
+    blackColumn: "Black",
+    undo: "↩ Undo",
+    newGame: "🔄 New Game",
+    promotionTitle: "Choose Promotion Piece",
+    timeUpWhite: "Time's up! Black wins",
+    timeUpBlack: "Time's up! White wins",
+    languages: {
+      ar: "Arabic",
+      en: "English",
+      ja: "Japanese",
+      zh: "Chinese",
+      es: "Spanish",
+      fr: "French",
+      ru: "Russian"
+    }
+  },
+  ja: { // اليابانية
+    gameTitle: "♔ チェスゲーム ♚",
+    darkTheme: "ダーク",
+    lightTheme: "ライト",
+    glassTheme: "グラス",
+    phoneMode: "電話モード",
+    computerMode: "コンピュータモード",
+    whiteTurn: "白のターン",
+    blackTurn: "黒のターン",
+    check: "チェック！",
+    checkmate: (winner) => `${winner}の勝ち`,
+    stalemate: "ステイルメイト！",
+    minutes: "分",
+    setTimer: "設定",
+    startTimer: "▶ 開始",
+    pauseTimer: "⏸ 一時停止",
+    white: "⚪ 白",
+    black: "⚫ 黒",
+    capturedWhite: "白の取った駒:",
+    capturedBlack: "黒の取った駒:",
+    moveHistory: "棋譜",
+    whiteColumn: "白",
+    blackColumn: "黒",
+    undo: "↩ 戻る",
+    newGame: "🔄 新しいゲーム",
+    promotionTitle: "昇格する駒を選択",
+    timeUpWhite: "時間切れ！黒の勝ち",
+    timeUpBlack: "時間切れ！白の勝ち",
+    languages: {
+      ar: "アラビア語",
+      en: "英語",
+      ja: "日本語",
+      zh: "中国語",
+      es: "スペイン語",
+      fr: "フランス語",
+      ru: "ロシア語"
+    }
+  },
+  zh: { // الصينية
+    gameTitle: "♔ 国际象棋 ♚",
+    darkTheme: "深色",
+    lightTheme: "浅色",
+    glassTheme: "玻璃",
+    phoneMode: "手机模式",
+    computerMode: "电脑模式",
+    whiteTurn: "白方回合",
+    blackTurn: "黑方回合",
+    check: "将军！",
+    checkmate: (winner) => `将死！${winner}获胜`,
+    stalemate: "僵局！",
+    minutes: "分钟",
+    setTimer: "设置",
+    startTimer: "▶ 开始",
+    pauseTimer: "⏸ 暂停",
+    white: "⚪ 白方",
+    black: "⚫ 黑方",
+    capturedWhite: "白方吃子:",
+    capturedBlack: "黑方吃子:",
+    moveHistory: "棋步记录",
+    whiteColumn: "白方",
+    blackColumn: "黑方",
+    undo: "↩ 悔棋",
+    newGame: "🔄 新游戏",
+    promotionTitle: "选择升变棋子",
+    timeUpWhite: "时间到！黑方获胜",
+    timeUpBlack: "时间到！白方获胜",
+    languages: {
+      ar: "阿拉伯语",
+      en: "英语",
+      ja: "日语",
+      zh: "中文",
+      es: "西班牙语",
+      fr: "法语",
+      ru: "俄语"
+    }
+  },
+  es: { // الإسبانية
+    gameTitle: "♔ Juego de Ajedrez ♚",
+    darkTheme: "Oscuro",
+    lightTheme: "Claro",
+    glassTheme: "Vidrio",
+    phoneMode: "Modo Teléfono",
+    computerMode: "Modo Computadora",
+    whiteTurn: "Turno de Blancas",
+    blackTurn: "Turno de Negras",
+    check: "¡Jaque!",
+    checkmate: (winner) => `¡Jaque mate! Ganan ${winner}`,
+    stalemate: "¡Tablas!",
+    minutes: "minutos",
+    setTimer: "Ajustar",
+    startTimer: "▶ Iniciar",
+    pauseTimer: "⏸ Pausar",
+    white: "⚪ Blancas",
+    black: "⚫ Negras",
+    capturedWhite: "Piezas Capturadas Blancas:",
+    capturedBlack: "Piezas Capturadas Negras:",
+    moveHistory: "Historial de Movimientos",
+    whiteColumn: "Blancas",
+    blackColumn: "Negras",
+    undo: "↩ Deshacer",
+    newGame: "🔄 Nuevo Juego",
+    promotionTitle: "Elige Pieza de Promoción",
+    timeUpWhite: "¡Tiempo agotado! Ganan Negras",
+    timeUpBlack: "¡Tiempo agotado! Ganan Blancas",
+    languages: {
+      ar: "Árabe",
+      en: "Inglés",
+      ja: "Japonés",
+      zh: "Chino",
+      es: "Español",
+      fr: "Francés",
+      ru: "Ruso"
+    }
+  },
+  fr: { // الفرنسية
+    gameTitle: "♔ Jeu d'Échecs ♚",
+    darkTheme: "Sombre",
+    lightTheme: "Clair",
+    glassTheme: "Verre",
+    phoneMode: "Mode Téléphone",
+    computerMode: "Mode Ordinateur",
+    whiteTurn: "Tour des Blancs",
+    blackTurn: "Tour des Noirs",
+    check: "Échec !",
+    checkmate: (winner) => `Échec et mat ! ${winner} gagne`,
+    stalemate: "Pat !",
+    minutes: "minutes",
+    setTimer: "Régler",
+    startTimer: "▶ Démarrer",
+    pauseTimer: "⏸ Pause",
+    white: "⚪ Blancs",
+    black: "⚫ Noirs",
+    capturedWhite: "Pièces Capturées Blancs:",
+    capturedBlack: "Pièces Capturées Noirs:",
+    moveHistory: "Historique des Coups",
+    whiteColumn: "Blancs",
+    blackColumn: "Noirs",
+    undo: "↩ Annuler",
+    newGame: "🔄 Nouvelle Partie",
+    promotionTitle: "Choisir Pièce de Promotion",
+    timeUpWhite: "Temps écoulé ! Les Noirs gagnent",
+    timeUpBlack: "Temps écoulé ! Les Blancs gagnent",
+    languages: {
+      ar: "Arabe",
+      en: "Anglais",
+      ja: "Japonais",
+      zh: "Chinois",
+      es: "Espagnol",
+      fr: "Français",
+      ru: "Russe"
+    }
+  },
+  ru: { // الروسية
+    gameTitle: "♔ Шахматная Игра ♚",
+    darkTheme: "Тёмная",
+    lightTheme: "Светлая",
+    glassTheme: "Стекло",
+    phoneMode: "Режим Телефона",
+    computerMode: "Режим Компьютера",
+    whiteTurn: "Ход Белых",
+    blackTurn: "Ход Чёрных",
+    check: "Шах!",
+    checkmate: (winner) => `Мат! Победа ${winner}`,
+    stalemate: "Пат!",
+    minutes: "минут",
+    setTimer: "Установить",
+    startTimer: "▶ Старт",
+    pauseTimer: "⏸ Пауза",
+    white: "⚪ Белые",
+    black: "⚫ Чёрные",
+    capturedWhite: "Взятые Белыми:",
+    capturedBlack: "Взятые Чёрными:",
+    moveHistory: "История Ходов",
+    whiteColumn: "Белые",
+    blackColumn: "Чёрные",
+    undo: "↩ Отменить",
+    newGame: "🔄 Новая Игра",
+    promotionTitle: "Выберите Фигуру для Превращения",
+    timeUpWhite: "Время вышло! Чёрные побеждают",
+    timeUpBlack: "Время вышло! Белые побеждают",
+    languages: {
+      ar: "Арабский",
+      en: "Английский",
+      ja: "Японский",
+      zh: "Китайский",
+      es: "Испанский",
+      fr: "Французский",
+      ru: "Русский"
+    }
+  }
+};
+
+// ==================== وظائف النظام ====================
+
+function changeLanguage(lang) {
+  currentLanguage = lang;
+  updateUI();
+  
+  // تحديد اتجاه الصفحة حسب اللغة
+  if (lang === 'ar' || lang === 'he' || lang === 'fa') {
+    document.dir = 'rtl';
+    document.documentElement.lang = 'ar';
+  } else {
+    document.dir = 'ltr';
+    document.documentElement.lang = lang;
+  }
+  
+  // تحديث أزرار اللغة
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.lang === lang) {
+      btn.classList.add('active');
+    }
+  });
+  
+  // حفظ التفضيل
+  localStorage.setItem('chessLanguage', lang);
+}
+
+function initLanguageSelector() {
+  const selector = document.getElementById('languageSelector');
+  const languages = ['ar', 'en', 'ja', 'zh', 'es', 'fr', 'ru'];
+  
+  languages.forEach(lang => {
+    const btn = document.createElement('button');
+    btn.className = 'lang-btn';
+    btn.dataset.lang = lang;
+    btn.textContent = translations[lang].languages[lang];
+    btn.onclick = () => changeLanguage(lang);
+    selector.appendChild(btn);
+  });
+}
+
+function updateUI() {
+  const t = translations[currentLanguage];
+  
+  // تحديث العنوان
+  document.getElementById('gameTitle').textContent = t.gameTitle;
+  
+  // تحديث زر الوضع
+  document.getElementById('modeText').textContent = dm ? t.computerMode : t.phoneMode;
+  
+  // تحديث حالة اللعبة
+  const statusText = document.getElementById('statusText');
+  if (cm) {
+    const winner = cp === 'white' ? t.black : t.white;
+    statusText.textContent = t.checkmate(winner);
+  } else if (st) {
+    statusText.textContent = t.stalemate;
+  } else if (ck) {
+    statusText.textContent = t.check;
+  } else {
+    statusText.textContent = cp === 'white' ? t.whiteTurn : t.blackTurn;
+  }
+  
+  // تحديث العناوين
+  document.getElementById('minutesLabel').textContent = t.minutes;
+  document.getElementById('setTimerBtn').textContent = t.setTimer;
+  document.getElementById('timerToggle').textContent = tr ? t.pauseTimer : t.startTimer;
+  document.getElementById('whiteLabel').textContent = t.white;
+  document.getElementById('blackLabel').textContent = t.black;
+  document.getElementById('capturedWhiteLabel').textContent = t.capturedWhite;
+  document.getElementById('capturedBlackLabel').textContent = t.capturedBlack;
+  document.getElementById('moveHistoryLabel').textContent = t.moveHistory;
+  document.getElementById('whiteColumn').textContent = t.whiteColumn;
+  document.getElementById('blackColumn').textContent = t.blackColumn;
+  document.getElementById('undoBtn').textContent = t.undo;
+  document.getElementById('resetBtn').textContent = t.newGame;
+  document.getElementById('promotionTitle').textContent = t.promotionTitle;
+  
+  // تحديث أزرار الثيمات
+  document.querySelector('.theme-btn.dark').title = t.darkTheme;
+  document.querySelector('.theme-btn.light').title = t.lightTheme;
+  document.querySelector('.theme-btn.glass').title = t.glassTheme;
+}
+
+function changeTheme(theme) {
+  currentTheme = theme;
+  document.body.className = 'theme-' + theme;
+  
+  // تحديث الأزرار النشطة
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.querySelector('.theme-btn.' + theme).classList.add('active');
+  
+  // حفظ التفضيل
+  localStorage.setItem('chessTheme', theme);
+}
+
+function loadPreferences() {
+  const savedTheme = localStorage.getItem('chessTheme') || 'dark';
+  const savedLanguage = localStorage.getItem('chessLanguage') || 'ar';
+  
+  changeTheme(savedTheme);
+  changeLanguage(savedLanguage);
+}
+
+// ==================== وظائف اللعبة ====================
+
+function gac(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();return ac}
+function ps(t){try{const c=gac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);if(t==='move'){o.frequency.setValueAtTime(800,c.currentTime);o.frequency.exponentialRampToValueAtTime(400,c.currentTime+0.1);g.gain.setValueAtTime(0.3,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.1);o.start();o.stop(c.currentTime+0.1)}else if(t==='capture'){o.type='square';o.frequency.setValueAtTime(300,c.currentTime);o.frequency.exponentialRampToValueAtTime(100,c.currentTime+0.15);g.gain.setValueAtTime(0.25,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.15);o.start();o.stop(c.currentTime+0.15)}else if(t==='check'){o.type='triangle';o.frequency.setValueAtTime(600,c.currentTime);o.frequency.setValueAtTime(800,c.currentTime+0.1);g.gain.setValueAtTime(0.3,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.3);o.start();o.stop(c.currentTime+0.3)}}catch(e){}}
+function ib(){b=[];for(let r=0;r<8;r++){b[r]=[];for(let c=0;c<8;c++)b[r][c]=null}for(let c=0;c<8;c++){b[1][c]={type:'pawn',color:'black',hasMoved:false};b[6][c]={type:'pawn',color:'white',hasMoved:false}}const br=['rook','knight','bishop','queen','king','bishop','knight','rook'];for(let c=0;c<8;c++){b[0][c]={type:br[c],color:'black',hasMoved:false};b[7][c]={type:br[c],color:'white',hasMoved:false}}}
+function cb(x){return x.map(r=>r.map(c=>c?{...c}:null))}
+function fk(x,col){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(x[r][c]&&x[r][c].type==='king'&&x[r][c].color===col)return{row:r,col:c};return null}
+function inb(r,c){return r>=0&&r<8&&c>=0&&c<8}
+function sua(x,sq,ac){for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=x[r][c];if(p&&p.color===ac){const m=grm(x,{row:r,col:c},p,null,true);if(m.some(v=>v.row===sq.row&&v.col===sq.col))return true}}return false}
+function iic(x,col){const k=fk(x,col);if(!k)return false;return sua(x,k,col==='white'?'black':'white')}
+function grm(x,f,p,ept,ao=false){const m=[];const{row,col}=f;const d=p.color==='white'?-1:1;switch(p.type){case'pawn':if(!ao){if(inb(row+d,col)&&!x[row+d][col]){m.push({row:row+d,col});if(!p.hasMoved&&!x[row+2*d][col])m.push({row:row+2*d,col})}}[-1,1].forEach(dc=>{const nr=row+d,nc=col+dc;if(inb(nr,nc)){if(ao||(x[nr][nc]&&x[nr][nc].color!==p.color))m.push({row:nr,col:nc});if(!ao&&ept&&ept.row===nr&&ept.col===nc)m.push({row:nr,col:nc})}});break;case'knight':[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>{const nr=row+dr,nc=col+dc;if(inb(nr,nc)&&(!x[nr][nc]||x[nr][nc].color!==p.color))m.push({row:nr,col:nc})});break;case'bishop':[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>{for(let i=1;i<8;i++){const nr=row+dr*i,nc=col+dc*i;if(!inb(nr,nc))break;if(!x[nr][nc])m.push({row:nr,col:nc});else{if(x[nr][nc].color!==p.color)m.push({row:nr,col:nc});break}}});break;case'rook':[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{for(let i=1;i<8;i++){const nr=row+dr*i,nc=col+dc*i;if(!inb(nr,nc))break;if(!x[nr][nc])m.push({row:nr,col:nc});else{if(x[nr][nc].color!==p.color)m.push({row:nr,col:nc});break}}});break;case'queen':[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>{for(let i=1;i<8;i++){const nr=row+dr*i,nc=col+dc*i;if(!inb(nr,nc))break;if(!x[nr][nc])m.push({row:nr,col:nc});else{if(x[nr][nc].color!==p.color)m.push({row:nr,col:nc});break}}});break;case'king':[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>{const nr=row+dr,nc=col+dc;if(inb(nr,nc)&&(!x[nr][nc]||x[nr][nc].color!==p.color))m.push({row:nr,col:nc})});break}return m}
+function gvm(x,f,ept){const p=x[f.row][f.col];if(!p)return[];const rm=grm(x,f,p,ept);const vm=[];for(const mv of rm){const tb=cb(x);tb[mv.row][mv.col]=tb[f.row][f.col];tb[f.row][f.col]=null;if(p.type==='pawn'&&ept&&mv.row===ept.row&&mv.col===ept.col){const cr=p.color==='white'?mv.row+1:mv.row-1;tb[cr][mv.col]=null}if(!iic(tb,p.color))vm.push(mv)}if(p.type==='king'&&!p.hasMoved&&!iic(x,p.color)){const row=f.row;const kr=x[row][7];if(kr&&kr.type==='rook'&&!kr.hasMoved&&!x[row][5]&&!x[row][6]){const en=p.color==='white'?'black':'white';if(!sua(x,{row,col:5},en)&&!sua(x,{row,col:6},en))vm.push({row,col:6})}const qr=x[row][0];if(qr&&qr.type==='rook'&&!qr.hasMoved&&!x[row][1]&&!x[row][2]&&!x[row][3]){const en=p.color==='white'?'black':'white';if(!sua(x,{row,col:2},en)&&!sua(x,{row,col:3},en))vm.push({row,col:2})}}return vm}
+function havm(x,col,ept){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(x[r][c]&&x[r][c].color===col&&gvm(x,{row:r,col:c},ept).length>0)return true;return false}
+function mm(f,t,pp){gh.push({board:cb(b),currentPlayer:cp,enPassantTarget:ep,capturedPieces:{white:[...cap.white],black:[...cap.black]},moveHistory:[...mh],lastMove:lm,isCheck:ck,isCheckmate:cm,isStalemate:st});const p=b[f.row][f.col];const ca=b[t.row][t.col];let mv={from:f,to:t,piece:{...p},captured:ca};if(p.type==='pawn'&&ep&&t.row===ep.row&&t.col===ep.col){const cr=p.color==='white'?t.row+1:t.row-1;mv.captured=b[cr][t.col];mv.isEnPassant=true;b[cr][t.col]=null}if(p.type==='king'&&Math.abs(t.col-f.col)===2){if(t.col===6){mv.isCastling='kingside';b[f.row][5]=b[f.row][7];b[f.row][7]=null;b[f.row][5].hasMoved=true}else{mv.isCastling='queenside';b[f.row][3]=b[f.row][0];b[f.row][0]=null;b[f.row][3].hasMoved=true}ps('move')}ep=null;if(p.type==='pawn'&&Math.abs(t.row-f.row)===2)ep={row:(f.row+t.row)/2,col:f.col};b[t.row][t.col]=p;b[f.row][f.col]=null;p.hasMoved=true;if(p.type==='pawn'&&(t.row===0||t.row===7)&&pp){b[t.row][t.col]={type:pp,color:p.color,hasMoved:true};mv.promotion=pp}if(mv.captured){if(mv.captured.color==='white')cap.white.push(mv.captured);else cap.black.push(mv.captured);ps('capture')}else if(!mv.isCastling)ps('move');mh.push(mv);lm=mv;cp=cp==='white'?'black':'white';ck=iic(b,cp);const hm=havm(b,cp,ep);cm=ck&&!hm;st=!ck&&!hm;if(ck)ps('check');ss=null;vm=[];rb();updateUI()}
+function um(){if(gh.length===0)return;const pv=gh.pop();b=pv.board;cp=pv.currentPlayer;ep=pv.enPassantTarget;cap=pv.capturedPieces;mh=pv.moveHistory;lm=pv.lastMove;ck=pv.isCheck;cm=pv.isCheckmate;st=pv.isStalemate;ss=null;vm=[];rb();updateUI()}
+function hsc(r,c){if(cm||st)return;const p=b[r][c];if(ss){const iv=vm.some(m=>m.row===r&&m.col===c);if(iv){const mp=b[ss.row][ss.col];if(mp.type==='pawn'){const pr=mp.color==='white'?0:7;if(r===pr){spd(ss,{row:r,col:c},mp.color);return}}mm(ss,{row:r,col:c});return}if(p&&p.color===cp){ss={row:r,col:c};vm=gvm(b,ss,ep);rb();return}ss=null;vm=[];rb();return}if(p&&p.color===cp){ss={row:r,col:c};vm=gvm(b,ss,ep);rb()}}
+function spd(f,t,col){const ov=document.getElementById('promotionOverlay');const pp=document.getElementById('promotionPieces');pp.innerHTML=['queen','rook','bishop','knight'].map(ty=>'<div class="promotion-piece" onclick="sp('+f.row+','+f.col+','+t.row+','+t.col+',\''+ty+'\')">'+P[ty+'-'+col]+'</div>').join('');ov.style.display='flex'}
+function sp(fr,fc,tr,tc,ty){document.getElementById('promotionOverlay').style.display='none';mm({row:fr,col:fc},{row:tr,col:tc},ty)}
+function rb(){const be=document.getElementById('board');be.innerHTML='';const bf=dm&&cp==='black';const kp=ck?fk(b,cp):null;const rs=bf?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7];const cs=bf?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7];for(const r of rs)for(const c of cs){const sq=document.createElement('div');const il=(r+c)%2===0;sq.className='square '+(il?'light':'dark');if(ss&&ss.row===r&&ss.col===c)sq.classList.add('selected');if(lm&&((lm.from.row===r&&lm.from.col===c)||(lm.to.row===r&&lm.to.col===c)))sq.classList.add('last-move');if(kp&&kp.row===r&&kp.col===c)sq.classList.add('check');const ivm=vm.some(m=>m.row===r&&m.col===c);if(ivm)sq.classList.add(b[r][c]?'capture-move':'valid-move');sq.onclick=()=>hsc(r,c);if(b[r][c]){const pc=b[r][c];const pe=document.createElement('span');pe.className='piece '+pc.color;
+let pieceCode = '';
+switch(pc.type) {
+    case 'king': pieceCode = 'k'; break;
+    case 'queen': pieceCode = 'q'; break;
+    case 'rook': pieceCode = 'r'; break;
+    case 'bishop': pieceCode = 'b'; break;
+    case 'knight': pieceCode = 'n'; break;
+    case 'pawn': pieceCode = 'p'; break;
+}
+pe.classList.add('p-'+(pc.color==='white'?'w':'b')+pieceCode);
+if(!bf&&pc.color==='black')pe.classList.add('flipped');sq.appendChild(pe)}be.appendChild(sq)}}
+function ui(){updateUI();}
+function fm(mv){if(mv.isCastling==='kingside')return'O-O';if(mv.isCastling==='queenside')return'O-O-O';let n=mv.piece.type!=='pawn'?P[mv.piece.type+'-'+mv.piece.color]:'';if(mv.captured){if(mv.piece.type==='pawn')n+=String.fromCharCode(97+mv.from.col);n+='x'}n+=String.fromCharCode(97+mv.to.col)+(8-mv.to.row);if(mv.promotion)n+='='+P[mv.promotion+'-'+mv.piece.color];if(mv.isEnPassant)n+=' e.p.';return n}
+function ft(s){const m=Math.floor(s/60);const sc=s%60;return m.toString().padStart(2,'0')+':'+sc.toString().padStart(2,'0')}
+function utd(){document.getElementById('whiteTime').textContent=ft(wt);document.getElementById('blackTime').textContent=ft(bt);document.getElementById('whiteTime').className='timer-time'+(wt<=30?' low':'');document.getElementById('blackTime').className='timer-time'+(bt<=30?' low':'')}
+function toggleTimer(){if(cm||st)return;tr=!tr;updateUI();if(tr){ti=setInterval(()=>{if(cp==='white'){wt--;if(wt<=0){wt=0;tr=false;cm=true;updateUI();alert(translations[currentLanguage].timeUpWhite)}}else{bt--;if(bt<=0){bt=0;tr=false;cm=true;updateUI();alert(translations[currentLanguage].timeUpBlack)}}utd();updateUI()},1000)}else clearInterval(ti)}
+function resetTimer(){const m=parseInt(document.getElementById('timerInput').value)||10;wt=m*60;bt=m*60;tr=false;clearInterval(ti);updateUI();utd()}
+function toggleMode(){dm=!dm;document.getElementById('modeIcon').textContent=dm?'💻':'📱';updateUI();rb()}
+function resetGame(){ib();cp='white';ss=null;vm=[];lm=null;ep=null;cap={white:[],black:[]};mh=[];gh=[];ck=false;cm=false;st=false;resetTimer();rb();updateUI()}
+function undoMove(){um()}
+
+// ==================== تهيئة اللعبة ====================
+initLanguageSelector();
+ib();
+rb();
+loadPreferences();
+utd();
+  </script>
+</body>
+</html>
